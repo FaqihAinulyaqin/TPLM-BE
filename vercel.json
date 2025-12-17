@@ -1,6 +1,7 @@
 {
     "version": 2,
     "framework": null,
+    "buildCommand": "rm -rf /tmp/*.php && composer install --no-dev --optimize-autoloader",
     "functions": {
         "api/index.php": { "runtime": "vercel-php@0.7.4" }
     },
@@ -20,8 +21,8 @@
     ],
     "env": {
         "APP_ENV": "production",
-        "APP_DEBUG": "true",
-        "APP_URL": "",
+        "APP_DEBUG": "false",
+        "APP_URL": "https://tplm-be.vercel.app",
 
         "APP_CONFIG_CACHE": "/tmp/config.php",
         "APP_EVENTS_CACHE": "/tmp/events.php",
