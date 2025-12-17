@@ -8,6 +8,7 @@ use App\Http\Controllers\TopicController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\GradeController;
+use App\Http\Controllers\AttachmentController;
 
 // Health check endpoint
 Route::get('/health', function () {
@@ -24,6 +25,9 @@ Route::middleware('throttle:10,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 });
+
+// Public attachment download (no auth required)
+Route::get('/attachments/{filename}', [AttachmentController::class, 'download']);
 
 // Protected routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {

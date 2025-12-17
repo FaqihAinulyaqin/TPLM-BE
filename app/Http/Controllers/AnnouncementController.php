@@ -61,7 +61,9 @@ class AnnouncementController extends Controller
                 foreach ($request->file('attachments') as $file) {
                     try {
                         $fileName = time() . '_' . uniqid() . '_' . $file->getClientOriginalName();
+                        Log::info('Uploading file: ' . $fileName);
                         $filePath = $file->storeAs('attachments', $fileName, 'public');
+                        Log::info('File uploaded to: ' . $filePath);
 
                         Attachment::create([
                             'announcement_id' => $announcement->id,
