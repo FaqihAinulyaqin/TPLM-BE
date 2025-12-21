@@ -19,11 +19,10 @@ Route::get('/health', function () {
     ]);
 });
 
-// Public routes dengan rate limit ketat (10 percobaan per menit)
-Route::middleware('throttle:10,1')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
-});
+// Public routes
+Route::middleware('throttle:register')->post('/register', [AuthController::class, 'register']);
+Route::middleware('throttle:login')->post('/login', [AuthController::class, 'login']);
+
 
 // Protected routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {
@@ -35,7 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Class routes
     Route::prefix('classes')->group(function () {
         Route::get('/', [ClassController::class, 'index']); // Get all user's classes
-        Route::post('/', [ClassController::class, 'store'])->middleware('throttle:20,1'); // Create class (teacher)
+        Route::post('/', [ClassController::class, 'store'])->middleware('throttle:create-class');
         Route::post('/join', [ClassController::class, 'join']); // Join class (student)
         Route::get('/{id}', [ClassController::class, 'show']); // Get class details with members
         Route::put('/{id}', [ClassController::class, 'update']); // Update class (teacher)
@@ -52,7 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Announcement routes (within class)
         Route::prefix('{classId}/announcements')->group(function () {
             Route::get('/', [AnnouncementController::class, 'index']); // Get all announcements
-            Route::post('/', [AnnouncementController::class, 'store'])->middleware('throttle:20,1'); // Create announcement (teacher)
+            Route::post('/', [AnnouncementController::class, 'store'])->middleware('throttle:create-announcement');
             Route::get('/{announcementId}', [AnnouncementController::class, 'show']); // Get announcement detail
             Route::put('/{announcementId}', [AnnouncementController::class, 'update']); // Update announcement (teacher)
             Route::delete('/{announcementId}', [AnnouncementController::class, 'destroy']); // Delete announcement (teacher)
@@ -64,7 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
             // Comment routes (within announcement)
             Route::prefix('{announcementId}/comments')->group(function () {
                 Route::get('/', [CommentController::class, 'index']); // Get all comments
-                Route::post('/', [CommentController::class, 'store'])->middleware('throttle:30,1'); // Add comment
+                Route::post('/', [CommentController::class, 'store'])->middleware('throttle:add-comment'); // Add comment
                 Route::put('/{commentId}', [CommentController::class, 'update']); // Update comment
                 Route::delete('/{commentId}', [CommentController::class, 'destroy']); // Delete comment
             });
@@ -73,7 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::prefix('{announcementId}/grades')->group(function () {
                 Route::get('/', [GradeController::class, 'index']); // Get all grades (teacher)
                 Route::post('/', [GradeController::class, 'store']); // Add single grade (teacher)
-                 Route::post('/batch', [GradeController::class, 'storeBatch'])->middleware('throttle:10,1'); // Add multiple grades (teacher)
+                Route::post('/batch', [GradeController::class, 'storeBatch'])->middleware('throttle:batch-grade'); // Add multiple grades (teacher)
                 Route::put('/{gradeId}', [GradeController::class, 'update']); // Update grade (teacher)
                 Route::delete('/{gradeId}', [GradeController::class, 'destroy']); // Delete grade (teacher)
             });
