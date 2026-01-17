@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+
 class Announcement extends Model
 {
     use HasFactory, SoftDeletes;
@@ -17,11 +18,13 @@ class Announcement extends Model
         'type',
         'title',
         'description',
+        'due_date',
         'allow_comments',
         'is_reused',
     ];
 
     protected $casts = [
+        'due_date' => 'datetime',
         'allow_comments' => 'boolean',
         'is_reused' => 'boolean',
         'created_at' => 'datetime',
@@ -54,9 +57,19 @@ class Announcement extends Model
         return $this->hasMany(Comment::class);
     }
 
+    public function submissions() 
+    {
+        return $this->hasMany(Submission::class);
+    }
+
     public function grades()
     {
         return $this->hasMany(Grade::class);
+    }
+
+    public function isPastDue()
+    {
+        return $this->due_date && now()->isAfter($this->due_date);
     }
 
      // Query Scopes

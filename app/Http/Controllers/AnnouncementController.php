@@ -272,19 +272,35 @@ class AnnouncementController extends Controller
                 'type' => 'sometimes|in:material,assignment,quiz,question',
                 'title' => 'sometimes|string|max:255',
                 'description' => 'nullable|string|max:5000',
+                'topic_id' => 'nullable|exists:topics,id',
                 'allow_comments' => 'boolean',
+                'attachments.*' => 'file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,zip,rar'
             ], [
                 'type.in' => 'Tipe pengumuman tidak valid',
                 'title.max' => 'Judul maksimal 255 karakter',
                 'description.max' => 'Deskripsi maksimal 5000 karakter',
             ]);
 
-            $announcement->update($validated);
+            $announcement->update(collect($validated)->except('attachments')->toArray());
+
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $fileName = time() . '_' . uniqid() . '_' . $file->getClientOriginalName();
+                    $filePath = $file->storeAs('attachments', $fileName, 'public');
+
+                    Attachment::create([
+                        'announcement_id' => $announcement->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $filePath,
+                        'file_type' => $file->getClientMimeType(),
+                    ]);
+                }
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pengumuman berhasil diupdate',
-                'data' => $announcement
+                'message' => 'Pengumuman berhasil diperbarui',
+                'data' => $announcement->load('attachments', 'topic')
             ]);
 
         } catch (ModelNotFoundException $e) {
@@ -345,6 +361,111 @@ class AnnouncementController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus pengumuman',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function deleteAttachment($classId, $announcementId, $attachmentId)
+    {
+        try {
+            $class = ClassRoom::findOrFail($classId);
+            $announcement = Announcement::where('class_id', $classId)->findOrFail($announcementId);
+
+            if ($class->teacher_id !== request()->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses'
+                ], 403);
+            }
+
+            $attachment = Attachment::where('announcement_id', $announcementId)
+                                    ->findOrFail($attachmentId);
+
+            // Delete from storage
+            Storage::disk('public')->delete($attachment->file_path);
+            $attachment->delete();
+
+            Log::channel('activity')->info('Deleted announcement attachment', [
+                'user_id' => request()->user()->id,
+                'announcement_id' => $announcementId,
+                'attachment_id' => $attachmentId,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'File berhasil dihapus'
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File tidak ditemukan'
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus file',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    
+    public function addAttachment(Request $request, $classId, $announcementId)
+    {
+        try {
+            $class = ClassRoom::findOrFail($classId);
+            $announcement = Announcement::where('class_id', $classId)->findOrFail($announcementId);
+
+            if ($class->teacher_id !== $request->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses'
+                ], 403);
+            }
+
+            $validated = $request->validate([
+                'file' => 'required|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,zip,rar'
+            ], [
+                'file.required' => 'File harus diupload',
+                'file.max' => 'Ukuran file maksimal 10MB',
+                'file.mimes' => 'Format file tidak didukung',
+            ]);
+
+            $file = $request->file('file');
+            $fileName = time() . '_' . uniqid() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('attachments', $fileName, 'public');
+
+            $attachment = Attachment::create([
+                'announcement_id' => $announcement->id,
+                'file_name' => $file->getClientOriginalName(),
+                'file_path' => $filePath,
+                'file_type' => $file->getClientMimeType(),
+            ]);
+
+            Log::channel('activity')->info('Added announcement attachment', [
+                'user_id' => $request->user()->id,
+                'announcement_id' => $announcementId,
+                'attachment_id' => $attachment->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'File berhasil ditambahkan',
+                'data' => $attachment
+            ], 201);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan file',
                 'error' => $e->getMessage()
             ], 500);
         }

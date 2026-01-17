@@ -8,6 +8,7 @@ use App\Http\Controllers\TopicController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\GradeController;
+use App\Http\Controllers\SubmissionController;
 
 // Health check endpoint
 Route::get('/health', function () {
@@ -55,6 +56,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{announcementId}', [AnnouncementController::class, 'show']); // Get announcement detail
             Route::put('/{announcementId}', [AnnouncementController::class, 'update']); // Update announcement (teacher)
             Route::delete('/{announcementId}', [AnnouncementController::class, 'destroy']); // Delete announcement (teacher)
+            Route::post('/{announcementId}/attachments', [AnnouncementController::class, 'addAttachment']); // Update announcement file section
+            Route::delete('/{announcementId}/attachments/{attachmentId}', [AnnouncementController::class, 'deleteAttachment']); // Delete announcement file section
             
             // Reuse and add to topic
             Route::post('/{announcementId}/reuse', [AnnouncementController::class, 'reuse']); // Reuse announcement
@@ -75,10 +78,22 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::post('/batch', [GradeController::class, 'storeBatch'])->middleware('throttle:batch-grade'); // Add multiple grades (teacher)
                 Route::put('/{gradeId}', [GradeController::class, 'update']); // Update grade (teacher)
                 Route::delete('/{gradeId}', [GradeController::class, 'destroy']); // Delete grade (teacher)
+                Route::get('/task-grades', [GradeController::class, 'taskGrades']); // Get grade for a specific assignment
+            });
+
+            //Submission routes (within announcement)
+            Route::prefix('{announcementId}/submissions')->group(function () {
+                Route::get('/', [SubmissionController::class, 'index']); // Get all submissions (teacher)
+                Route::post('/', [SubmissionController::class, 'store']); // Submit assignment (student)
+                Route::get('/my-submission', [SubmissionController::class, 'mySubmission']); // Get my submission
+                Route::put('/{submissionId}', [SubmissionController::class, 'update']); // Update submission
+                Route::post('/{submissionId}/attachments', [SubmissionController::class, 'addFile']); // Add submission file
+                Route::delete('/{submissionId}/attachments/{fileId}', [SubmissionController::class, 'deleteFile']); // Delete submission file
+                Route::delete('/{submissionId}', [SubmissionController::class, 'destroy']); // Delete submission (teacher)
             });
         });
 
         // Student grades in class
-        Route::get('/{classId}/my-grades', [GradeController::class, 'myGrades']); // Get my grades (student)
+        Route::get('/{classId}/my-grades', [GradeController::class, 'myGrades']); // get all grades in a class (student)
     });
 });

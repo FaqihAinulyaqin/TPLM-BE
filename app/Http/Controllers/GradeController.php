@@ -26,6 +26,14 @@ class GradeController extends Controller
                 ], 403);
             }
 
+            // cek type announcement
+            if ($announcement->type !== 'assignment') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Penilaian hanya bisa dilakukan pada tugas (assignment)'
+                ], 400);
+            }
+
             $validated = $request->validate([
                 'student_id' => 'required|exists:users,id',
                 'score' => 'required|numeric|min:0|max:100',
@@ -104,6 +112,14 @@ class GradeController extends Controller
                     'success' => false,
                     'message' => 'Hanya guru kelas yang bisa menambahkan nilai'
                 ], 403);
+            }
+
+            // cek type announcement
+            if ($announcement->type !== 'assignment') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Penilaian hanya bisa dilakukan pada tugas (assignment'
+                ], 400);
             }
 
             $validated = $request->validate([
@@ -218,6 +234,56 @@ class GradeController extends Controller
         }
     }
 
+    public function taskGrades(Request $request, $classId, $announcementId)
+    {
+        try {
+            $user = $request->user();
+            $class = ClassRoom::findOrFail($classId);
+
+            // make sure students are members of the class
+            if (!$class->members()->where('user_id', $user->id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda bukan anggota kelas ini'
+                ], 403);
+            }
+
+            $announcement = Announcement::where('class_id', $classId)->findOrFail($announcementId);
+
+            if ($announcement->type !== 'assignment') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nilai hanya tersedia untuk tugas (assignment)'
+                ], 400);
+            }
+
+            // Ambil nilai siswa untuk assignment ini
+            $grade = Grade::where('announcement_id', $announcementId)
+                        ->where('student_id', $user->id)
+                        ->with('announcement')
+                        ->first();
+
+            return response()->json([
+                'success' => true,
+                'data' => $grade,
+                'message' => $grade ? null : 'Nilai belum tersedia'
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak ditemukan'
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil nilai',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
     public function index($classId, $announcementId)
     {
         try {
@@ -258,6 +324,7 @@ class GradeController extends Controller
     {
         try {
             $class = ClassRoom::findOrFail($classId);
+            $announcement = Announcement::where('class_id', $classId)->findOrFail($announcementId);
             $grade = Grade::where('announcement_id', $announcementId)->findOrFail($gradeId);
 
             if ($class->teacher_id !== $request->user()->id) {
@@ -265,6 +332,14 @@ class GradeController extends Controller
                     'success' => false,
                     'message' => 'Anda tidak memiliki akses untuk mengubah nilai'
                 ], 403);
+            }
+
+            // cek type announcement
+            if ($announcement->type !== 'assignment') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Penilaian hanya bisa dilakukan pada tugas (assignment)'
+                ], 400);
             }
 
             $validated = $request->validate([
