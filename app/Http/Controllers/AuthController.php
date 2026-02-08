@@ -31,7 +31,7 @@ class AuthController extends Controller
                     'confirmed',
                     'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/',
                 ],
-                'role' => 'required|in:teacher,student',
+                'role' => 'required|in:teacher,student,admin',
             ], [
                 'name.required' => 'Nama harus diisi',
                 'name.min' => 'Nama minimal 3 karakter',

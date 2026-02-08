@@ -259,7 +259,9 @@ class AnnouncementController extends Controller
     {
         try {
             $class = ClassRoom::findOrFail($classId);
-            $announcement = Announcement::where('class_id', $classId)->findOrFail($announcementId);
+            $announcement = Announcement::where('class_id', $classId)
+                ->where('id', $announcementId)
+                ->firstOrFail();
 
             if ($class->teacher_id !== $request->user()->id) {
                 return response()->json([
@@ -273,7 +275,7 @@ class AnnouncementController extends Controller
                 'title' => 'sometimes|string|max:255',
                 'description' => 'nullable|string|max:5000',
                 'topic_id' => 'nullable|exists:topics,id',
-                'allow_comments' => 'boolean',
+                'allow_comments' => 'sometimes|boolean',
                 'attachments.*' => 'file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,zip,rar'
             ], [
                 'type.in' => 'Tipe pengumuman tidak valid',
@@ -281,21 +283,16 @@ class AnnouncementController extends Controller
                 'description.max' => 'Deskripsi maksimal 5000 karakter',
             ]);
 
-            $announcement->update(collect($validated)->except('attachments')->toArray());
+            $announcement->fill(collect($validated)->except('attachments')->toArray());
 
-            if ($request->hasFile('attachments')) {
-                foreach ($request->file('attachments') as $file) {
-                    $fileName = time() . '_' . uniqid() . '_' . $file->getClientOriginalName();
-                    $filePath = $file->storeAs('attachments', $fileName, 'public');
-
-                    Attachment::create([
-                        'announcement_id' => $announcement->id,
-                        'file_name' => $file->getClientOriginalName(),
-                        'file_path' => $filePath,
-                        'file_type' => $file->getClientMimeType(),
-                    ]);
-                }
+            if (! $announcement->isDirty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada perubahan data'
+                ], 422);
             }
+
+            $announcement->save();
 
             return response()->json([
                 'success' => true,
