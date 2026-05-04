@@ -4,7 +4,9 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
+
     "content-hash": "a2554e25001a4fc3ac65318a1c38da9a",
+    "content-hash": "31ac28bcac9d07618ca3221ecab81b1e",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -511,6 +513,7 @@
             "time": "2024-07-16T11:13:48+00:00"
         },
         {
+
             "name": "composer/pcre",
             "version": "3.3.2",
             "source": {
@@ -667,6 +670,7 @@
             "time": "2025-08-20T19:15:30+00:00"
         },
         {
+
             "name": "danharrin/date-format-converter",
             "version": "v0.3.1",
             "source": {
