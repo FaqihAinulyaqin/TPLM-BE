@@ -7,14 +7,18 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\SkipsFailures;
+
 class UsersImport implements ToCollection, WithHeadingRow, SkipsOnFailure
 {
     use SkipsFailures;
+
     private string $role;
+
     public function __construct(string $role)
     {
         $this->role = $role;
     }
+
     public function collection(Collection $rows)
     {
         foreach ($rows as $row) {
