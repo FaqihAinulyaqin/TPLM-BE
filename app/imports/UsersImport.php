@@ -24,21 +24,25 @@ class UsersImport implements ToCollection, WithHeadingRow, SkipsOnFailure
     public function collection(Collection $rows)
     {
         foreach ($rows as $row) {
+
             $emailValue = $row['email'] ?? $row['username'] ?? null;
 
             if (empty($emailValue) || empty($row['password'])) {
+            if (empty($row['username']) || empty($row['password'])) {
                 continue;
             }
 
-            User::updateOrCreate(
-                ['email' => $emailValue],
-                [
-                    'name'     => $row['name'] ?? $emailValue,
-                    'email'    => $emailValue,
-                    'password' => Hash::make($row['password']),
-                    'role'     => $this->role,
-                ]
-            );
+                User::updateOrCreate(
+
+                    ['email' => $emailValue],
+                    [
+                        'name'     => $row['name'] ?? $emailValue,
+                        'email'    => $emailValue,
+                        'password' => Hash::make($row['password']),
+                        'role'     => $this->role,
+                    ]
+                );
+            }
         }
     }
 }
